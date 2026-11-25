@@ -1,0 +1,36 @@
+{
+  "expo": {
+    "name": "DLMS",
+    "slug": "dlms-mobile",
+    "version": "1.0.0",
+    "scheme": "dlms",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "newArchEnabled": true,
+    "splash": {
+      "backgroundColor": "#0F172A",
+      "resizeMode": "contain"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.dlms.app",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "DLMS uses your location to verify you are physically inside the library for attendance check-in."
+      }
+    },
+    "android": {
+      "package": "com.dlms.app",
+      "permissions": ["ACCESS_FINE_LOCATION", "ACCESS_COARSE_LOCATION"]
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "DLMS uses your location to verify attendance check-in inside the library."
+        }
+      ]
+    ]
+  }
+}
