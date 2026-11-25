@@ -1,12 +1,17 @@
 import { Platform, StyleSheet, View, ViewStyle, StyleProp } from "react-native";
 import { GlassView } from "expo-glass-effect";
+import { BlurView } from "expo-blur";
 import { colors, radius } from "../constants/theme";
 import { ReactNode } from "react";
 
 /**
- * Liquid Glass wrapper.
- * Uses the native expo-glass-effect GlassView on iOS 26+; falls back to a
- * translucent styled view on Android / older iOS so the UI still works.
+ * Adaptive glassmorphism wrapper.
+ *
+ * - iOS 26+  → native Liquid Glass via expo-glass-effect (GlassView)
+ * - Android + older iOS → real frosted-glass blur via expo-blur
+ *   (experimentalBlurMethod="dimezisBlurView" is required for blur on Android)
+ *
+ * Same API everywhere: <Glass style tintColor isInteractive glassEffectStyle>
  */
 export function Glass({
   children,
@@ -21,9 +26,9 @@ export function Glass({
   tintColor?: string;
   glassEffectStyle?: "clear" | "regular";
 }) {
-  const supportsGlass = Platform.OS === "ios" && Number(Platform.Version) >= 26;
+  const supportsLiquidGlass = Platform.OS === "ios" && Number(Platform.Version) >= 26;
 
-  if (supportsGlass) {
+  if (supportsLiquidGlass) {
     return (
       <GlassView
         glassEffectStyle={glassEffectStyle}
@@ -37,17 +42,55 @@ export function Glass({
     );
   }
 
-  return <View style={[styles.base, styles.fallback, tintColor ? { backgroundColor: tintColor } : null, style]}>{children}</View>;
+  // Frosted-glass fallback (Android + iOS < 26)
+  return (
+    <View style={[styles.base, style]}>
+      <BlurView
+        intensity={Platform.OS === "android" ? 60 : 40}
+        tint="dark"
+        experimentalBlurMethod={Platform.OS === "android" ? "dimezisBlurView" : undefined}
+        style={[StyleSheet.absoluteFill, { overflow: "hidden" as const }]}
+      />
+      {/* translucent tint layer gives the "frosted" body + colored variants */}
+      <View
+        pointerEvents="none"
+        style={[
+          StyleSheet.absoluteFill,
+          { backgroundColor: tintColor ? `${tintColor}55` : colors.glassFill },
+        ]}
+      />
+      {/* subtle top-light border highlight */}
+      <View
+        pointerEvents="none"
+        style={[
+          StyleSheet.absoluteFill,
+          styles.border,
+          { borderRadius: styleBorderRadius(style) },
+        ]}
+      />
+      <View style={styles.content}>{children}</View>
+    </View>
+  );
+}
+
+/** Pull a borderRadius out of the passed style so the border highlight matches. */
+function styleBorderRadius(style?: StyleProp<ViewStyle>): number {
+  const flat = StyleSheet.flatten(style);
+  if (!flat) return radius.lg;
+  return (flat.borderRadius as number | undefined) ?? radius.lg;
 }
 
 const styles = StyleSheet.create({
   base: {
     borderRadius: radius.lg,
-    overflow: "hidden" as const,
+    overflow: "hidden",
   },
-  fallback: {
-    backgroundColor: colors.glassFill,
+  border: {
     borderWidth: 1,
     borderColor: colors.glassBorder,
+    borderTopColor: "rgba(255,255,255,0.28)",
+  },
+  content: {
+    flex: 1,
   },
 });
